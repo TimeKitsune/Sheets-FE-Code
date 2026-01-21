@@ -1,0 +1,1941 @@
+const ss = SpreadsheetApp.getActiveSpreadsheet();
+const slevels = ss.getSheetByName("Level Tracker");
+const sstats = ss.getSheetByName("Stats");
+const scombat = ss.getSheetByName("Combat");
+const sover = ss.getSheetByName("Overview");
+const smisc = ss.getSheetByName("Misc");
+
+const init = sover.getRange("C2").getValue();
+var actualInitHit = {value:false};
+var initShred = smisc.getRange("F2").getValue();
+var initSleep = smisc.getRange("F3").getValue();
+var initPoison = smisc.getRange("F4").getValue();
+var initBerserk = smisc.getRange("F5").getValue();
+var initSilence = smisc.getRange("F6").getValue();
+var initPetri = smisc.getRange("F7").getValue();
+var initBurn = smisc.getRange("F8").getValue();
+var initParaly = smisc.getRange("F9").getValue();
+var initSealStr = smisc.getRange("F10").getValue();
+var initSealMag = smisc.getRange("F11").getValue();
+var initSealDef = smisc.getRange("F12").getValue();
+var initSealRes = smisc.getRange("F13").getValue();
+var initSealSpd = smisc.getRange("F14").getValue();
+var initMastery = scombat.getRange("K11").getValue();
+const initMasteryBonus = sover.getRange("K22").getValue();
+const initMasteryMax = sover.getRange("K23").getValue();
+const initClass = sover.getRange("K24").getValue();
+const initBoss = sover.getRange("K25").getValue();
+const initBonusExp = sover.getRange("K26").getValue();
+const initStark = sover.getRange("D13").getValue();
+const initStarkCh = sover.getRange("C13").getValue();
+const initSkills = sover.getRange("F3:G21").getValues();
+
+var initHit = {value: scombat.getRange("M5").getValue()};
+var initAvoid = {value: scombat.getRange("K7").getValue()};
+var initDamage = {value: scombat.getRange("J15").getValue()};
+var initDamageTotal = 0;
+var initCrit = {value: scombat.getRange("M6").getValue()};
+var initDodge = {value: scombat.getRange("K8").getValue()};
+var initLev = sover.getRange("C12").getValue();
+var initMaxHP = sover.getRange("D5").getValue();
+var initCurrHP = sover.getRange("C5").getValue();
+var initExpReq = sover.getRange("D6").getValue();
+var initCurrExp = sover.getRange("C6").getValue();
+var initStr = scombat.getRange("M7").getValue();
+var initMag = scombat.getRange("M8").getValue();
+var initSkl = sstats.getRange("G6").getValue();
+var initSpd = sstats.getRange("G7").getValue();
+var initLck = sstats.getRange("G8").getValue();
+var initDef = scombat.getRange("K5").getValue();
+var initRes = scombat.getRange("K6").getValue();
+let initMt = smisc.getRange("B7").getValue();
+var initEff = scombat.getRange("O4").getValue();
+var initAS = scombat.getRange("O7").getValue();
+var initMagicW = scombat.getRange("O6").getValue();
+var initBrave = scombat.getRange("O5").getValue();
+var initWeapon = scombat.getRange("J2").getValue();
+let initWeaponExp = smisc.getRange("B12").getValue();
+let initWeaponType = smisc.getRange("B2").getValue();
+let initWeaponEffect = smisc.getRange("B6").getValue();
+let initCurrUses = smisc.getRange("B11").getValue();
+var initCritQuote = sover.getRange("M:M").getValues();
+var initQuoteNum = sover.getRange("L1").getValue();
+
+const opp = scombat.getRange("Q1").getValue();
+var actualOppHit = {value:false};
+var canCounter = scombat.getRange("O11").getValue();
+var adjacent = scombat.getRange("M11").getValue();
+
+function levelUpFlip(name,stats,over,levels) {
+  var button = stats.getRange("S17");
+  var level = over.getRange("C12");
+  var currLevel = level.getValue();
+  var newLevel = currLevel + 1;
+  level.setValue(newLevel);
+
+  button.setValue(true);
+  var range = stats.getRange("R19:R26").getValues();
+  button.setValue(false);
+
+  for (var i = 0; i < range.length; i++) {
+    var o = i+3;
+    var base = stats.getRange("B" + o).getValue();
+    var gains = stats.getRange("C" + o).getValue();
+    var cap = stats.getRange("D" + o).getValue();
+    if ((base+gains) == cap) {
+      range[i] = "0";
+    }
+  }
+
+  var tV = transposeMatrix(range);
+  levels.getRange(newLevel,2,tV.length,tV[0].length).setValues(tV);
+
+  sendMessage(name + " grew to level " + newLevel + "! Gained " + range[0] + " HP, " + range[1] + " Str, " + range[2] + " Mag, " + range[3] + " Skl, " + range[4] + " Spd, " + range[5] + " Lck, " + range[6] + " Def, and " + range[7] + " Res!");
+
+}
+
+function levelUp() {
+  var button = sstats.getRange("S17");
+  var level = sover.getRange("C12");
+  var currLevel = level.getValue();
+  var newLevel = currLevel + 1;
+  level.setValue(newLevel);
+
+  button.setValue(true);
+  var range = sstats.getRange("R19:R26").getValues();
+  button.setValue(false);
+
+  for (var i = 0; i < range.length; i++) {
+    var o = i+3;
+    var base = sstats.getRange("B" + o).getValue();
+    var gains = sstats.getRange("C" + o).getValue();
+    var cap = sstats.getRange("D" + o).getValue();
+    if ((base+gains) == cap) {
+      range[i] = "0";
+    }
+  }
+
+  var tV = transposeMatrix(range);
+  slevels.getRange(newLevel,2,tV.length,tV[0].length).setValues(tV);
+
+  sendMessage(init + " grew to level " + newLevel + "! Gained " + range[0] + " HP, " + range[1] + " Str, " + range[2] + " Mag, " + range[3] + " Skl, " + range[4] + " Spd, " + range[5] + " Lck, " + range[6] + " Def, and " + range[7] + " Res!");
+}
+
+function transposeMatrix(array2D) {
+  return Object.keys(array2D[0]).map(function (column) {
+    return array2D.map(function (row) {
+      return row[column];
+    });
+  });
+}
+
+function weaponSim(combat,stats,affector,rate,chance) {
+  var weapon = combat.getRange("J2");
+  var weaponType;
+  var weaponEXP;
+  var currUses;
+  var recType;
+
+  switch(weapon.getValue()) {
+    case "Weapon 1":
+      weaponType = combat.getRange("F2");
+      weaponEXP = combat.getRange("F8");
+      currUses = combat.getRange("E6");
+      break;
+    case "Weapon 2":
+      weaponType = combat.getRange("F13");
+      weaponEXP = combat.getRange("F19");
+      currUses = combat.getRange("E17");
+      break;
+    case "Weapon 3":
+      weaponType = combat.getRange("F24");
+      weaponEXP = combat.getRange("F30");
+      currUses = combat.getRange("E28");
+      break;
+    case "Weapon 4":
+      weaponType = combat.getRange("F35");
+      weaponEXP = combat.getRange("F41");
+      currUses = combat.getRange("E39");
+      break;
+    case "Weapon 5":
+      weaponType = combat.getRange("F46");
+      weaponEXP = combat.getRange("F52");
+      currUses = combat.getRange("E50");
+      break;
+  }
+
+  var newUses;
+
+  if (chance <= rate) {
+    switch(affector) {
+      case "Vessel":
+      case "Tome":
+        newUses = currUses.getValue() - 2;
+        currUses.setValue(newUses);
+        if (newUses < 1) {
+          sendMessage("Weapon broke!");
+        }
+        break;
+      case "Beauty":
+        sendMessage("Beauty Stark activates! Weapon use preserved!");
+        break;
+      case "Armsthrift":
+        sendMessage("Armsthrift activates! Weapon use preserved!");
+        break;
+    }
+  }
+  else {
+    newUses = currUses.getValue() - 1;
+    currUses.setValue(newUses);
+    if (newUses < 1 & weaponType != "Staves") {
+      sendMessage("Weapon broke!");
+    }
+    else if (newUses < 1) {
+      sendMessage("Staff broke!");
+    }
+  }
+
+  var currEXP;
+
+  if (combat == scombat) {
+    initCurrUses = currUses.getValue();
+    if (confirm(initSkills,"Discipline") == true) {
+      weaponEXP *= 2;
+    }
+  }
+  else if (combat == ecombat) {
+    oppCurrUses = currUses.getValue();
+    if (confirm(oppSkills,"Discipline") == true) {
+      weaponEXP *= 2;
+    }
+  }
+
+  switch(weaponType.getValue()) {
+    case "Swords":
+      recType = stats.getRange("Q3");
+      currExp = recType.getValue() + weaponEXP.getValue();
+      recType.setValue(currExp);
+      break;
+    case "Lances":
+      recType = stats.getRange("Q4");
+      currExp = recType.getValue() + weaponEXP.getValue();
+      recType.setValue(currExp);
+      break;
+    case "Axes":
+      recType = stats.getRange("Q5");
+      currExp = recType.getValue() + weaponEXP.getValue();
+      recType.setValue(currExp);
+      break;
+    case "Bows":
+      recType = stats.getRange("Q6");
+      currExp = recType.getValue() + weaponEXP.getValue();
+      recType.setValue(currExp);
+      break;
+    case "Daggers/Knives":
+      recType = stats.getRange("Q7");
+      currExp = recType.getValue() + weaponEXP.getValue();
+      recType.setValue(currExp);
+      break;
+    case "Firearms":
+      recType = stats.getRange("Q8");
+      currExp = recType.getValue() + weaponEXP.getValue();
+      recType.setValue(currExp);
+      break;
+    case "Anima Tomes":
+      recType = stats.getRange("Q9");
+      currExp = recType.getValue() + weaponEXP.getValue();
+      recType.setValue(currExp);
+      break;
+    case "Dark Tomes":
+      recType = stats.getRange("Q10");
+      currExp = recType.getValue() + weaponEXP.getValue();
+      recType.setValue(currExp);
+      break;
+    case "Light Tomes":
+      recType = stats.getRange("Q11");
+      currExp = recType.getValue() + weaponEXP.getValue();
+      recType.setValue(currExp);
+      break;
+    case "Fists":
+      recType = stats.getRange("Q12");
+      currExp = recType.getValue() + weaponEXP.getValue();
+      recType.setValue(currExp);
+      break;
+    case "Stones":
+      recType = stats.getRange("Q13");
+      currExp = recType.getValue() + weaponEXP.getValue();
+      recType.setValue(currExp);
+      break;
+    case "Staves":
+      recType = stats.getRange("Q14");
+      currExp = recType.getValue() + weaponEXP.getValue();
+      recType.setValue(currExp);
+      break;
+    case "Other":
+      recType = stats.getRange("Q15");
+      currExp = recType.getValue() + weaponEXP.getValue();
+      recType.setValue(currExp);
+      break;
+    
+  }
+}
+
+function confirm(list,check) {
+  var pull = false;
+  
+  for (var i = 0; i < list.length; i++) {
+    var cellValue = list[i][0];
+    var yes = list[i][1];
+    if (cellValue === check && yes === "Yes") {
+      pull = true;
+    }
+  }
+
+  return pull;
+}
+
+const ref = SpreadsheetApp.openByUrl("https://docs.google.com/spreadsheets/d/1iwaemArtOcmSdfcAGQp1MnmPnfF2MlXSgdZrgqZ_Y-w/edit?usp=sharing");
+var sheet = ref.getSheetByName("NamesRefList");
+var names = sheet.getRange("A:A").getValues();
+
+for (var i = 0; i < names.length; i++) {
+  var cellValue = names[i][0];
+  if (typeof cellValue === "string" && cellValue.includes(opp)) {
+    var oppLink = sheet.getRange("B" + (i+1)).getValue();
+  }
+}
+
+const enemy = SpreadsheetApp.openByUrl(oppLink);
+const emisc = enemy.getSheetByName("Misc");
+const eover = enemy.getSheetByName("Overview");
+const estats = enemy.getSheetByName("Stats");
+const ecombat = enemy.getSheetByName("Combat");
+const elevels = enemy.getSheetByName("Level Tracker");
+
+var oppShred = emisc.getRange("F2").getValue();
+var oppSleep = emisc.getRange("F3").getValue();
+var oppPoison = emisc.getRange("F4").getValue();
+var oppBerserk = emisc.getRange("F5").getValue();
+var oppSilence = emisc.getRange("F6").getValue();
+var oppPetri = emisc.getRange("F7").getValue();
+var oppBurn = emisc.getRange("F8").getValue();
+var oppParaly = emisc.getRange("F9").getValue();
+var oppSealStr = emisc.getRange("F10").getValue();
+var oppSealMag = emisc.getRange("F11").getValue();
+var oppSealDef = emisc.getRange("F12").getValue();
+var oppSealRes = emisc.getRange("F13").getValue();
+var oppSealSpd = emisc.getRange("F14").getValue();
+var oppMastery = ecombat.getRange("K11").getValue();
+const oppMasteryBonus = eover.getRange("K22").getValue();
+const oppMasteryMax = eover.getRange("K23").getValue();
+const oppClass = eover.getRange("K24").getValue();
+const oppBoss = eover.getRange("K25").getValue();
+const oppBonusExp = eover.getRange("K26").getValue();
+const oppStark = eover.getRange("D13").getValue();
+const oppStarkCh = eover.getRange("C13").getValue();
+const oppSkills = eover.getRange("F3:G21").getValues();
+
+var oppHit = {value: scombat.getRange("M25").getValue()};
+var oppAvoid = {value: scombat.getRange("K27").getValue()};
+var oppDamage = {value: scombat.getRange("N15").getValue()};
+var oppDamageTotal = 0;
+var oppCrit = {value: scombat.getRange("M26").getValue()};
+var oppDodge = {value: scombat.getRange("K28").getValue()};
+var oppLev = eover.getRange("C12").getValue();
+var oppMaxHP = eover.getRange("D5").getValue();
+var oppCurrHP = eover.getRange("C5").getValue();
+var oppExpReq = eover.getRange("D6").getValue();
+var oppCurrExp = eover.getRange("C6").getValue();
+var oppStr = scombat.getRange("M27").getValue();
+var oppMag = scombat.getRange("M28").getValue();
+var oppSkl = estats.getRange("G6").getValue();
+var oppSpd = estats.getRange("G7").getValue();
+var oppLck = estats.getRange("G8").getValue();
+var oppDef = scombat.getRange("K25").getValue();
+var oppRes = scombat.getRange("K26").getValue();
+let oppMt = smisc.getRange("D7").getValue();
+var oppAS = scombat.getRange("O27").getValue();
+var oppMagicW = scombat.getRange("O26").getValue();
+var oppBrave = scombat.getRange("O25").getValue();
+var oppWeapon = ecombat.getRange("J2").getValue();
+let oppWeaponExp = smisc.getRange("D12").getValue();
+let oppWeaponType = smisc.getRange("D14").getValue();
+let oppWeaponEffect = smisc.getRange("D6").getValue();
+let oppCurrUses = smisc.getRange("D11").getValue();
+var oppCritQuote = eover.getRange("M:M").getValues();
+var oppQuoteNum = eover.getRange("L1").getValue();
+
+var initAether = false;
+var initGreatShield = false;
+var initReducCh = initSkl;
+var initNegCh = initDef;
+var initDesperation = false;
+var initLiquidOoze = confirm(initSkills,"Liquid Ooze");
+var initDevilPact = confirm(initSkills,"Devil's Pact");
+
+var oppAether = false;
+var oppGreatShield = false;
+var oppReducCh = oppSkl;
+var oppNegCh = oppDef;
+var oppVantage = false;
+var oppDesperation = false;
+var oppLiquidOoze = confirm(oppSkills,"Liquid Ooze");
+var oppDevilPact = confirm(initSkills,"Devil's Pact");
+
+var astraStrikes = false;
+var aetherStrikes = 0;
+var adeptAct = false;
+
+if (confirm(initSkills,"Nihil") == true) {
+  oppSkills.length = 0;
+}
+if (confirm(oppSkills,"Nihil") == true) {
+  initSkills.length = 0;
+}
+
+if (confirm(initSkills,"Wary Fighter") == true || confirm(oppSkills,"Wary Fighter") == true) {
+  initGreatShield = true;
+  oppGreatShield = true;
+}
+
+if (initStark == "Risk" && initStarkCh == "Major") {
+  initReducCh *= 2;
+  initNegCh *= 2;
+}
+else if (initStark == "Risk" && initStarkCh == "Minor") {
+  initReducCh *= 1.5;
+  initNegCh *= 1.5;
+}
+
+if (oppStark == "Risk" && oppStarkCh == "Major") {
+  oppReducCh *= 2;
+  oppNegCh *= 2;
+}
+else if (oppStark == "Risk" && oppStarkCh == "Minor") {
+  oppReducCh *= 1.5;
+  oppNegCh *= 1.5;
+}
+
+function staffUse() {
+  var hit = true;
+  var effect = initWeaponEffect;
+  var chance = Math.floor(Math.random() * 100) + 1;
+  var heal = scombat.getRange("M4").getValue() + scombat.getRange("O10").getValue();
+  var staff = scombat.getRange("J14").getValue();
+
+  const weap = SpreadsheetApp.openByUrl("https://docs.google.com/spreadsheets/d/1_K3XEkKeZvnD8P9dBnWqE8V03xBwPsn3abFIKcbkgU8/edit?usp=sharing");
+  var staves = weap.getSheetByName("Staves");
+  var staffList = staves.getRange("A:A").getValues();
+  var staffEXP = 1;
+
+  for (var i = 0; i < staffList.length; i++) {
+    var staffSelect = staffList[i][0];
+    if (staffSelect.includes(staff)) {
+      staffEXP = staves.getRange("Y" + (i+1)).getValue();
+    }
+  }
+
+  if (effect.includes("Restores")) {
+    if (heal > (oppMaxHP - oppCurrHP)) {
+      heal = oppMaxHP - oppCurrHP;
+      eover.getRange("C5").setValue(oppMaxHP);
+    }
+    else {
+      eover.getRange("C5").setValue(oppCurrHP + heal);
+    }
+    sendMessage(init + " heals " + opp + " for " + heal + " HP!");
+  }
+  else if (effect.includes("Cures")) {
+    sendMessage(init + " cures " + opp + " of their conditions!");
+    emisc.getRange("F2").setValue(0);
+    emisc.getRange("F3").setValue(0);
+    emisc.getRange("F4").setValue(0);
+    emisc.getRange("F5").setValue(0);
+    emisc.getRange("F6").setValue(0);
+    emisc.getRange("F7").setValue(0);
+    emisc.getRange("F8").setValue(0);
+    emisc.getRange("F9").setValue(0);
+    emisc.getRange("F10").setValue(0);
+    emisc.getRange("F11").setValue(0);
+    emisc.getRange("F12").setValue(0);
+    emisc.getRange("F13").setValue(0);
+    emisc.getRange("F14").setValue(0);
+  }
+  else if (effect.includes("Inflict") || effect.includes("Reduce") || staff == "Entrap") {
+    if (chance < (initHit.value - oppAvoid.value) && staff == "Entrap") {
+      sendMessage(init + " entraps " + opp + "!");
+    }
+    if (chance < (initHit.value - oppAvoid.value)) {
+      sendMessage(init + " inflicts a condition on " + opp + " with " + staff + " staff!");
+    }
+    else {
+      sendMessage(init + " missed with " + staff + "!");
+      hit = false;
+      recall = scombat.getRange("A:A").getValues();
+
+      for (var i = 0; i < recall.length; i++) {
+        var cellValue = recall[i][0];
+        if (typeof cellValue === cellValue.includes(initWeapon)) {
+          var charge = scombat.getRange("E" + (i+5));
+          newCharge = charge.getValue() - 1;
+          charge.setValue(newCharge);
+          if (newCharge < 1) {
+            sendMessage(staff + " broke!");
+          }
+        }
+      }
+    }
+  }
+  else if (effect.includes("Teleport")) {
+    sendMessage(init + " bends space to their whim with a " + staff + " staff!");
+  }
+  else if (staff == "Torch") {
+    sendMessage(init + " sheds some light with a Torch staff!");
+  }
+  else if (staff == "Unlock") {
+    sendMessage(init + " cracks open a locked door with an Unlock staff!");
+  }
+  else if (staff == "Obstruct") {
+    sendMessage(init + " blocks off a space with an Obstruct staff!");
+  }
+  else if (staff == "Ward") {
+    sendMessage(init + " bolsters an ally's Resistance with a decaying projection!");
+  }
+  else if (staff == "Hammerne") {
+    sendMessage(init + " fully restores the usage of a given weapon!");
+  }
+  else if (staff == "Anew") {
+    sendMessage(init + " inspires an ally to move once more!");
+  }
+  else {
+    sendMessage("Yeah, you fucked up or something.");
+  }
+  if (hit == true) {
+    weaponSim(scombat,sstats,"N/A",0,1);
+    var expGain = Math.ceil((9 + initLev) * staffEXP * initBonusExp);
+    sendMessage(init + " gains " + expGain + " Exp!");
+    initCurrExp += expGain;
+    if (initCurrExp >= initExpReq) {
+      while (initCurrExp >= initExpReq) {
+        initExpReq = sover.getRange("D6").getValue();
+        initCurrExp -= initExpReq;
+        sover.getRange("C6").setValue(initCurrExp);
+        levelUpFlip(init,sstats,sover,slevels);
+      }
+    }
+    else {
+      sover.getRange("C6").setValue(initCurrExp);
+    }
+  }
+}
+
+function sendMessage(message) {
+  var discordUrl = "https://discord.com/api/webhooks/1385009087678513294/vMidP8RIR6RkcL4TjXIfoYmjqerOIh6Y0l4Ex4zNEt19E2kKdkdQS7GI3u9BvfBDOodL";
+  var payload = JSON.stringify({content: message});
+  
+  var params = {
+    method: "POST",
+    payload: payload,
+    muteHttpExceptions: true,
+    contentType: "application/json"
+    };
+
+  var response = UrlFetchApp.fetch(discordUrl, params);
+
+}
+
+
+function fullHeal() {
+  for (var i = 1; i < names.length; i++) {
+    var cellValue = names[i][0];
+    if (cellValue != false) {
+      var newLink = sheet.getRange("B" + (i+1)).getValue();
+      var healSheet = SpreadsheetApp.openByUrl(newLink);
+      var healOver = healSheet.getSheetByName("Overview");
+      var fullst = healOver.getRange("D5").getValue();
+      healOver.getRange("C5").setValue(fullst);
+    }
+  }
+}
+
+function createAndProcessCopy() {
+  // Get the active spreadsheet
+  var originalId = ss.getId();
+  var mult = sover.getRange("E7").getValue();
+  var baseName = sover.getRange("C2").getValue();
+  let array = [];
+
+  for (var k = 1; k <= mult; k++) {
+    // Define the name for the copied spreadsheet
+    var shName = baseName;
+    if (mult != false){
+      shName = baseName + " " + k;
+    }
+
+    var newName = shName + " Sheet";
+
+    // Create a copy of the spreadsheet
+    var newSpreadsheet = DriveApp.getFileById(originalId).makeCopy(newName);
+    var newSpreadsheetId = newSpreadsheet.getId();
+
+    // Open the new spreadsheet
+    const copiedSpreadsheet = SpreadsheetApp.openById(newSpreadsheetId);
+    const newStats = copiedSpreadsheet.getSheetByName("Stats");
+    const newOver = copiedSpreadsheet.getSheetByName("Overview");
+    const newLevels = copiedSpreadsheet.getSheetByName("Level Tracker");
+    const newLink = copiedSpreadsheet.getUrl();
+    var file = DriveApp.getFileById(copiedSpreadsheet.getId())
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.EDIT);
+    var iterations = newOver.getRange("C12").getValue();
+    newOver.getRange("C2").setValue(shName);
+    newOver.getRange("C12").setValue(1);
+    newOver.getRange("E7").setValue("");
+
+    while (iterations > 1) {
+      levelUpSilent(newStats,newOver,newLevels);
+      iterations -= 1;
+    }
+
+    newOver.getRange("C5").setValue(newOver.getRange("D5").getValue());
+    array.push([shName,newLink]);
+  }
+  var z = 0;
+  for (z = 0; z < names.length; z++) {
+    var cellMax = names[z][0];
+    if (cellMax == false) {
+      break;
+    }
+  }
+  var numRows = array.length;
+  var numCol = array[0].length;
+  const paste = sheet.getRange(z+1,1,numRows,numCol);
+  paste.setValues(array);
+}
+
+function levelUpSilent(stats,over,levels) {
+  var button = stats.getRange("S17");
+  var level = over.getRange("C12");
+  var currLevel = level.getValue();
+  var newLevel = currLevel + 1;
+  level.setValue(newLevel);
+
+  button.setValue(true);
+  var range = stats.getRange("R19:R26").getValues();
+  button.setValue(false);
+
+  for (var i = 0; i < range.length; i++) {
+    var o = i+3;
+    var base = stats.getRange("B" + o).getValue();
+    var gains = stats.getRange("C" + o).getValue();
+    var cap = stats.getRange("D" + o).getValue();
+    if ((base+gains) == cap) {
+      range[i] = "0";
+    }
+  }
+
+  var tV = transposeMatrix(range);
+  levels.getRange(newLevel,2,tV.length,tV[0].length).setValues(tV);
+}
+
+function attack(chance,damage,attacker,defender,critter,othHP,combat,stats,stark,starkch,maxHP,currHP,str,mag,skl,spd,lck,def,res,magw,othDef,skills,aether) {
+  var totalDamage = 0;
+  var stone = damage.value;
+  var mod = 1;
+  var add = 0;
+  var uses = 100;
+  var quote = "Fuck you";
+  var reducCh = 100;
+  var negCh = 100;
+  var reduc = Math.floor(Math.random() * 100) + 1;
+  var neg = Math.floor(Math.random() * 100) + 1;
+  var aegis = false;
+  var apotheosis = false;
+  var pavise = false;
+  var greatShield = false;
+  var weaponEff = "0";
+  var curseCh = 31-lck;
+  var curseActive = false;
+  var critMod = 3;
+
+  if (attacker == init) {
+    uses = initCurrUses;
+    reducCh = oppReducCh;
+    negCh = oppNegCh;
+    weaponEff = initWeaponEffect;
+    if ((weaponEff.includes("(31-Luck)% chance to backfire") || oppDevilPact == true) && initDevilPact == false) {
+      curseActive = true;
+      }
+    aegis = confirm(oppSkills,"Aegis");
+    pavise = confirm(oppSkills,"Pavise");
+    apotheosis = confirm(oppSkills,"Apotheosis");
+    greatShield = confirm(oppSkills,"Great Shield");
+    var quotes = initCritQuote.filter(row => row[0] !== '');
+    var filteredQuotes = quotes;
+    var randQuote = Math.floor(Math.random() * initQuoteNum);
+    quote = filteredQuotes[randQuote][0];
+  }
+  else if (attacker == opp) {
+    uses = oppCurrUses;
+    reducCh = initReducCh;
+    negCh = initNegCh;
+    weaponEff = oppWeaponEffect;
+    if ((weaponEff.includes("(31-Luck)% chance to backfire") || initDevilPact == true) && oppDevilPact == false) {
+      curseActive = true;
+    }
+    aegis = confirm(initSkills,"Aegis");
+    pavise = confirm(initSkills,"Pavise");
+    apotheosis = confirm(initSkills,"Apotheosis");
+    greatShield = confirm(initSkills,"Great Shield");
+    var quotes = oppCritQuote.filter(row => row[0] !== '');
+    var filteredQuotes = quotes;
+    var randQuote = Math.floor(Math.random() * oppQuoteNum);
+    quote = filteredQuotes[randQuote][0];
+  }
+//Modifiers and junk
+  if ((attacker == init && confirm(oppSkills,"Expertise") == true) || (attacker == opp && confirm(initSkills,"Expertise") == true)) {
+    critMod = 2;
+  }
+  else if (weaponEff.includes("4x Crits")) {
+    critMod = 4;
+  }
+
+  if (stark == "Risk") {
+    if (starkch == "Minor") {
+      mod = 1.5;
+    }
+    else if (starkch == "Major") {
+      mod = 2;
+    }
+  }
+  if (confirm(skills,"Hoshidan Unity") == true || confirm(skills,"Rightful King") == true) {
+    add += 10;
+  }
+  if (confirm(skills,"Rightful Despot") == true) {
+    add += 10;
+  }
+  if (confirm(initSkills,"Quixotic") == true) {
+    add += 15;
+  }
+  if (confirm(skills,"Hero") == true && currHP <= maxHP/2) {
+    add += 30;
+  }
+  if (astraStrikes == true || (attacker == init && confirm(initSkills,"Dazzle") == true && canCounter == false)) {
+    mod = 0;
+    add = 0;
+  }
+  var strMod = (str * mod) + add;
+  var magMod = (mag * mod) + add;
+  var sklMod = (skl * mod) + add;
+  var spdMod = (spd * mod) + add;
+  var lckMod = (lck * mod) + add;
+  var defMod = (def * mod) + add;
+  var resMod = (res * mod) + add;
+
+  if (confirm(skills,"Lucky Charm") == true && astraStrikes == false) {
+    lckMod += 20;
+  }
+  if (starkch == "Major") {
+    starkch = "40";
+  }
+  else if (starkch == "Minor") {
+    starkch = "20";
+  }
+  else {
+    starkch = "0";
+  }
+//lotsa randInt rolls for skills
+  var starkRate = Math.floor(Math.random() * 100) + 1;
+  var hit = Math.floor(Math.random() * 100) + 1;
+  var crit = Math.floor(Math.random() * 100) + 1;
+  var devilCurse = Math.floor(Math.random() * 100) + 1;
+  var deadeye = Math.floor(Math.random() * 100) + 1;
+  var prepareToDie = Math.floor(Math.random() * 100) + 1;
+  var blackHole = Math.floor(Math.random() * 100) + 1;
+  var corona = Math.floor(Math.random() * 100) + 1;
+  var bedevil = Math.floor(Math.random() * 100) + 1;
+  var bShot = Math.floor(Math.random() * 100) + 1;
+  var bane = Math.floor(Math.random() * 100) + 1;
+  var colossus = Math.floor(Math.random() * 100) + 1;
+  var impale = Math.floor(Math.random() * 100) + 1;
+  var astra = Math.floor(Math.random() * 100) + 1;
+  var sol = Math.floor(Math.random() * 100) + 1;
+  var adept = Math.floor(Math.random() * 100) + 1;
+  var luna = Math.floor(Math.random() * 100) + 1;
+  var sureStrike = Math.floor(Math.random() * 100) + 1;
+  var sureAsShit = false;
+  var flare = Math.floor(Math.random() * 100) + 1;
+  var vengeance = Math.floor(Math.random() * 100) + 1;
+  var showTime = Math.floor(Math.random() * 100) + 1;
+  var lethality = Math.floor(Math.random() * 100) + 1;
+  var tear = Math.floor(Math.random() * 100) + 1;
+  var rend = Math.floor(Math.random() * 100) + 1;
+  var ignis = Math.floor(Math.random() * 100) + 1;
+  var rendHeaven = Math.floor(Math.random() * 100) + 1;
+  var dragonFang = Math.floor(Math.random() * 100) + 1;
+  var miracle = Math.floor(Math.random() * 100) + 1;
+
+//It would be pointless if Sure Strike procc'ed on hit
+  if (confirm(skills,"Sure Strike") == true && sureStrike <= sklMod) {
+    hit = 0;
+    sureAsShit = true;
+    sendMessage("Sure Strike activates! Hit guaranteed!");
+  }
+  if (hit <= chance && uses > 0) {
+    if (attacker == init && actualInitHit.value != true) {
+      actualInitHit.value = true;
+    }
+    else if (attacker == opp && actualOppHit.value != true) {
+      actualOppHit.value = true;
+    }
+    var cod;
+    var corn = starkch;
+//Lethality
+    if (confirm(skills,"Lethality") == true && lethality <= sklMod/4 && sureAsShit == false) {
+      othHP = 0;
+      starkRate = 0;
+      strMod = 0;
+      magMod = 0;
+      sklMod = 0;
+      spdMod = 0;
+      lckMod = 0;
+      defMod = 0;
+      resMod = 0;
+      starkch = 100;
+      sendMessage("Lethality activates! " + defender + " killed instantly!");
+    }
+//Astra
+    if (confirm(skills,"Astra") == true && astraStrikes == false && astra <= sklMod/2 && sureAsShit == false) {
+      sendMessage("Astra activates! " + attacker + " delivers 5 strikes at halved damage and no skills!");
+      astraStrikes = true;
+      starkRate = 0;
+      strMod = 0;
+      magMod = 0;
+      sklMod = 0;
+      spdMod = 0;
+      lckMod = 0;
+      defMod = 0;
+      resMod = 0;
+      starkch = 100;
+      damage.value = Math.floor(damage.value/2);
+      if (othHP > 0) {
+        attack(chance,damage,attacker,defender,critter,othHP,combat,stats,stark,starkch,maxHP,currHP,str,mag,skl,spd,lck,def,res,magw,othDef,skills,aether)
+      }
+      if (othHP > 0) {
+        attack(chance,damage,attacker,defender,critter,othHP,combat,stats,stark,starkch,maxHP,currHP,str,mag,skl,spd,lck,def,res,magw,othDef,skills,aether)
+      }
+      if (othHP > 0) {
+        attack(chance,damage,attacker,defender,critter,othHP,combat,stats,stark,starkch,maxHP,currHP,str,mag,skl,spd,lck,def,res,magw,othDef,skills,aether)
+      }
+      if (othHP > 0) {
+        attack(chance,damage,attacker,defender,critter,othHP,combat,stats,stark,starkch,maxHP,currHP,str,mag,skl,spd,lck,def,res,magw,othDef,skills,aether)
+      }
+      astraStrikes = false;
+    }
+//Damage formula reworks
+    var corona = false;
+    var luna = false;
+    if (confirm(skills,"Corona") == true && corona <= sklMod && magw == "Yes" && aether == false) {
+      if (damage.value > 0) {
+        if (defender == init) {
+          damage.value += initRes;
+        }
+        else if (defender == opp) {
+          damage.value += oppRes;
+        }
+      }
+      else if (attacker == init && magw == "Yes") {
+        damage.value += initMag;
+      }
+      else if (attacker == opp && magw == "Yes") {
+        damage.value += oppMag;
+      }
+      corona = true;
+      sendMessage("Corona activates! " + defender + "'s resistance bypassed! Halve " + defender + "'s hit rate for 1 turn!");
+    }
+    if ((confirm(skills,"Luna") == true && luna <= sklMod && corona == false) || aether == true) {
+      if (damage.value > 0 && magw == "Yes") {
+        if (defender == init) {
+          damage.value += Math.floor(initRes/2);
+        }
+        else if (defender == opp) {
+          damage.value += Math.floor(oppRes/2);
+        }
+      }
+      else if (damage.value > 0 && magw == "No") {
+        if (defender == init) {
+          damage.value += Math.floor(initDef/2);
+        }
+        else if (defender == opp) {
+          damage.value += Math.floor(oppDef/2);
+        }
+      }
+      else if (attacker == init && magw == "Yes") {
+        damage.value += Math.floor(oppRes/2);
+      }
+      else if (attacker == init && magw == "No") {
+        damage.value += Math.floor(oppDef/2);
+      }
+      else if (attacker == opp && magw == "Yes") {
+        damage.value += Math.floor(initRes/2);
+      }
+      else if (attacker == opp && magw == "No") {
+        damage.value += Math.floor(initDef/2);
+      }
+      luna = true;
+      sendMessage("Luna activates! Enemy Def/Res has been halved for this attack!");
+    }
+    if (confirm(skills,"Flare") == true && flare <= sklMod && magw == "Yes" && corona == false && luna == false) {
+      if (damage.value > 0) {
+        if (defender == init) {
+          damage.value += Math.floor(initRes/2);
+        }
+        else if (defender == opp) {
+          damage.value += Math.floor(oppRes/2);
+        }
+      }
+      else if (attacker == init && magw == "Yes") {
+        damage.value += Math.floor(oppRes/2);
+      }
+      else if (attacker == opp && magw == "Yes") {
+        damage.value += Math.floor(initRes/2);
+      }
+      sendMessage("Flare activates! " + defender + "'s resistance halved!");
+    }
+    if (attacker == init && starkRate <= starkch && stark != "N/A") {
+      if (stark == "Wind" && luna == false && initMagicW == "No") {
+        damage.value += Math.floor(othDef*0.5);
+        sendMessage("Wind Stark activates! Enemy defense halved!");
+      }
+      else if (stark == "Peacock") {
+        if (magw == "Yes") {
+          damage.value += Math.floor(initDef/2);
+          sendMessage("Peacock Stark activates! Def added to attack!");
+        }
+        else {
+          damage.value += Math.floor(initRes/2);
+          sendMessage("Peacock Stark activates! Res added to attack!");
+        }
+      }
+      else if (stark == "Changeling") {
+        if (magw == "Yes") {
+          damage.value += Math.floor(initStr/2);
+          sendMessage("Changeling Stark activates! Str added to attack!");
+        }
+        else {
+          damage.value += Math.floor(initMag/2);
+          sendMessage("Changeling Stark activates! Mag added to attack!");
+        }
+      }
+    }
+//Damage adders
+    if (confirm(skills,"Vengeance") == true && vengeance <= sklMod*2) {
+      damage.value += Math.floor((maxHP-currHP)/2);
+      sendMessage("Vengeance activates! Damage increased by lost health!");
+    }
+    if (confirm(initSkills,"Full-Out Offensive") == true && adjacent == true && attacker == init) {
+      damage.value += 6;
+      sendMessage("Full-Out Offensive activates! +6 damage!");
+    }
+    if (confirm(skills,"Bloodlust") == true) {
+      damage.value += Math.floor((maxHP-currHP)/4);
+      sendMessage("Bloodlust activates! +" + Math.floor((maxHP-currHP)/4) + " damage!");
+    }
+    if (confirm(skills,"Beast Blood") == true) {
+      damage.value += 2;
+      sendMessage("Beast Blood activates! +2 Damage!");
+    }
+    if (confirm(skills,"Frenzy") == true) {
+      damage.value += Math.floor((maxHP-currHP)/4);
+      sendMessage("Frenzy activates! +" + Math.floor((maxHP-currHP)/4) + " damage!");
+    }
+    if (confirm(skills,"Quick Draw") == true && attacker == init) {
+      damage.value += 4;
+      sendMessage("Quick Draw activates! +4 damage!");
+    }
+    if (confirm(skills,"Ignis") == true && ignis <= sklMod) {
+      if (magw == "Yes") {
+        damage.value += Math.floor(str/2);
+        sendMessage("Ignis activates! Half of Strength added to strike!");
+      }
+      else if (magw == "No") {
+        damage.value += Math.floor(mag/2);
+        sendMessage("Ignis activates! Half of Magic added to strike!");
+      }
+    }
+    if (confirm(skills,"On Guard") == true && attacker == opp) {
+      damage.value += 2;
+      sendMessage("On Guard activates! +2 damage!");
+    }
+    if (confirm(skills,"Strong Riposte") == true && attacker == opp) {
+      damage.value += 3;
+      sendMessage("Strong Riposte activates! +3 damage!");
+    }
+    if (confirm(skills,"Opportunist") == true && canCounter == false) {
+      damage.value += 4;
+      sendMessage("Opportunist activates! +4 damage!");
+    }
+    if (confirm(skills,"Rend Heaven") == true && rendHeaven <= sklMod*1.5) {
+      if (attacker == init && magw == "Yes") {
+        damage.value = Math.floor(oppMag/2);
+        sendMessage("Rend Heaven activates! +" + Math.floor(oppMag/2) + " damage!");
+      }
+      else if (attacker == init && magw == "No") {
+        damage.value = Math.floor(oppStr/2);
+        sendMessage("Rend Heaven activates! +" + Math.floor(oppMag/2) + " damage!");
+      }
+      else if (attacker == opp && magw == "Yes") {
+        damage.value = Math.floor(initMag/2);
+        sendMessage("Rend Heaven activates! +" + Math.floor(oppMag/2) + " damage!");
+      }
+      else if (attacker == opp && magw == "No") {
+        damage.value = Math.floor(initStr/2);
+        sendMessage("Rend Heaven activates! +" + Math.floor(oppMag/2) + " damage!");
+      }
+    }
+    if (confirm(skills,"Aggressor") == true && attacker == init) {
+      damage.value += 10;
+      sendMessage("Aggressor adds 10 damage!");
+    }
+    if (confirm(skills,"Pragmatic") == true && ((defender == opp && oppCurrHP < oppMaxHP) || (defender == init && initCurrHP < initMaxHP))) {
+      damage.value += 3;
+      sendMessage("Pragmatic adds 3 damage!");
+    }
+    if (confirm(skills,"Silent Pride") == true) {
+      if (Math.floor(currHP/maxHP) <= 0.25) {
+        damage.value += 6;
+        sendMessage("Silent Pride adds 6 damage!");
+      }
+      if (Math.floor(currHP/maxHP) <= 0.5) {
+        damage.value += 4;
+        sendMessage("Silent Pride adds 4 damage!");
+      }
+      if (Math.floor(currHP/maxHP) <= 0.75) {
+        damage.value += 2;
+        sendMessage("Silent Pride adds 2 damage!");
+      }
+    }
+    if (confirm(oppSkills,"Ready Stance") == true && attacker == opp) {
+      damage.value += 4;
+        sendMessage("Ready Stance adds 4 damage!");
+    }
+//Damage multipliers
+    if (attacker == init && starkRate <= starkch && stark != "N/A") {
+      if (stark == "Tome" && magw == "Yes") {
+        if (initEff == true) {
+          damage.value += (initMt*3);
+        }
+        damage.value += initMt;
+        cod = "Tome";
+        sendMessage(stark + " Stark activates! Enhanced weapon might!");
+      }
+      if (stark == "Vessel" && magw == "No") {
+        if (initEff == true) {
+          damage.value += (initMt*3);
+        }
+        damage.value += initMt;
+        cod = "Vessel";
+        sendMessage(stark + " Stark activates! Enhanced weapon might!");
+      }
+    }
+    if (stark == "Soul" && starkRate <= starkch) {
+        damage.value = Math.floor(damage.value*1.5);
+        Math.floor(damage.value);
+        sendMessage("Soul Stark activates! Damage increased!");
+    }
+    if (confirm(skills,"Deadeye") == true && deadeye <= sklMod/2) {
+      damage.value *= 2;
+      sendMessage("Deadeye activates! Damage doubled! " + defender + " will be afflicted with Sleep!");
+      if (defender == init) {
+        smisc.getRange("F3").setValue(1);
+      }
+      else if (defender == opp) {
+        emisc.getRange("F3").setValue(1);
+      }
+    }
+    if (confirm(skills,"Prepare To Die") == true && prepareToDie <= sklMod) {
+      damage.value *= 3;
+      sendMessage("Prepare To Die activates! Damage tripled!");
+    }
+    if (confirm(skills,"Black Hole") == true && blackHole <= sklMod) {
+      damage.value *= 2;
+      sendMessage("Black Hole activates! Damage doubled! " + defender + " afflicted with Silence!");
+      if (defender == init) {
+        smisc.getRange("F6").setValue(1);
+      }
+      else if (defender == opp) {
+        emisc.getRange("F6").setValue(1);
+      }
+    }
+    if (confirm(skills,"Bedevil") == true && bedevil <= sklMod) {
+      damage.value *= 2;
+      sendMessage("Bedevil activates! Damage doubled! " + defender + " afflicted with Berserk!");
+      if (defender == init) {
+        smisc.getRange("F5").setValue(1);
+      }
+      else if (defender == opp) {
+        emisc.getRange("F5").setValue(1);
+      }
+    }
+    if (confirm(skills,"Burning Shot") == true && bShot <= sklMod) {
+      damage.value += def;
+      sendMessage("Burning Shot activates! Damage increased by defense! " + defender + " afflicted with Burning!");
+      if (defender == init) {
+        smisc.getRange("F8").setValue(1);
+      }
+      else if (defender == opp) {
+        emisc.getRange("F8").setValue(1);
+      }
+    }
+    if (confirm(skills,"Colossus") == true && colossus <= sklMod) {
+      if (damage.value > 0) {
+        damage.value += (2*str);
+      }
+      else if (attacker == init) {
+        damage.value = initMt + (str*3);
+      }
+      else if (attacker == opp) {
+        damage.value = oppMt + (str*3);
+      }
+      critter = 0;
+      sendMessage("Colossus activates! Strength tripled for this strike at the cost of critical chance!");
+    }
+    if (confirm(skills,"Impale") == true && impale <= sklMod) {
+      damage.value *=  3;
+      critter = 0;
+      sendMessage("Impale activates! Damage tripled for this strike at the cost of critical chance!");
+    }
+    if (sureAsShit == true) {
+      damage.value *= 1.5;
+    }
+    if (confirm(skills,"Show Time") == true && showTime <= sklMod/2) {
+      damage.value *= 1.5;
+      sendMessage("Show Time activates! Damage increased! " + defender + "'s hit rate will be halved for the next turn!");
+    }
+    if (confirm(skills,"Dragon Fang") == true && dragonFang <= sklMod*0.75) {
+      damage.value *= 1.5;
+      sendMessage("Dragon Fang activates! Damage increased!");
+    }
+    if (confirm(skills,"Tear") == true && tear <= spdMod/2) {
+      damage.value += str;
+      sendMessage("Tear activates! Damage increased by Strength! Reduce " + defender + "'s Speed by half for one turn!");
+    }
+    if (confirm(skills,"Rend") == true && rend <= spdMod/2) {
+      damage.value += Math.floor(str/2);
+      sendMessage("Rend activates! Damage increased by half of Strength! " + defender + " is Paralyzed!");
+      if (defender == init) {
+        smisc.getRange("F9").setValue(1);
+      }
+      else if (defender == opp) {
+        emisc.getRange("F9").setValue(1);
+      }
+    }
+//Weapon preservation skills
+    var rock = starkRate;
+    if (stark == "Beauty" && starkRate <= corn) {
+      cod = "Beauty";
+    }
+    else if (confirm(skills,"Armsthrift") == true && (stark != "Tome" && stark != "Vessel")) {
+      cod = "Armsthrift";
+      corn = lckMod;
+      starkRate = Math.floor(Math.random() * 100) + 1;
+    }
+//Damage null
+    if (greatShield == true && neg <= negCh && othHP > 0) {
+      damage.value = 0;
+      if (attacker == init) {
+        initGreatShield = true;
+      }
+      else if (attacker == opp) {
+        oppGreatShield = true;
+      }
+      sendMessage("Great Shield activates! Incoming damage negated!")
+    }
+//Damage reducers
+    if (magw == "Yes" && aegis == true && reduc <= reducCh && damage.value > 0 && othHP > 0) {
+      damage.value /= 2;
+      sendMessage("Aegis activates! Damage from incoming magical attack halved!");
+    }
+    else if (magw == "No" && pavise == true && reduc <= reducCh && damage.value > 0 && othHP > 0) {
+      damage.value /= 2;
+      sendMessage("Pavise activates! Damage from incoming physical attack halved!");
+    }
+    if (magw == "Yes" && apotheosis == true) {
+      damage.value /= 2;
+      sendMessage("Apotheosis halves all incoming magic damage!");
+    }
+    if (confirm(initSkills,"Dark Inhibitor") == true && attacker == opp) {
+      damage.value -= 1;
+      sendMessage("Dark Inhibitor reduces incoming damage by 1!");
+    }
+    if (confirm(oppSkills,"Dark Inhibitor") == true && attacker == init) {
+      damage.value -= 1;
+      sendMessage("Dark Inhibitor reduces incoming damage by 1!");
+    }
+    if (confirm(initSkills,"Close-Quarters Combat") == true && adjacent == true && attacker == opp) {
+      damage.value -= 6;
+      
+      sendMessage("Close-Quarters Combat reduces incoming melee damage by 6!");
+    }
+    if (confirm(initSkills,"Silent Pride") == true && attacker == opp) {
+      if (Math.floor(initCurrHP/initMaxHP) <= 0.25) {
+        damage.value -= 6;
+        sendMessage("Silent Pride reduces incoming damage by 6!");
+      }
+      if (Math.floor(initCurrHP/initMaxHP) <= 0.5) {
+        damage.value -= 4;
+        sendMessage("Silent Pride reduces incoming damage by 4!");
+      }
+      if (Math.floor(initCurrHP/initMaxHP) <= 0.75) {
+        damage.value -= 2;
+        sendMessage("Silent Pride reduces incoming damage by 2!");
+      }
+    }
+    else if (confirm(oppSkills,"Silent Pride") == true && attacker == init) {
+      if (Math.floor(oppCurrHP/oppMaxHP) <= 0.25) {
+        damage.value -= 6;
+        sendMessage("Silent Pride reduces incoming damage by 6!");
+      }
+      if (Math.floor(oppCurrHP/oppMaxHP) <= 0.5) {
+        damage.value -= 4;
+        sendMessage("Silent Pride reduces incoming damage by 4!");
+      }
+      if (Math.floor(oppCurrHP/oppMaxHP) <= 0.75) {
+        damage.value -= 2;
+        sendMessage("Silent Pride reduces incoming damage by 2!");
+      }
+    }
+    if (currHP < maxHP && ((defender == opp && confirm(oppSkills,"Pragmatic") == true) || (confirm(initSkills,"Pragmatic") == true && defender == init))) {
+      damage.value -= 1;
+      sendMessage("Pragmatic reduces incoming damage by 1!");
+    }
+    if (confirm(oppSkills,"Apprehension") == true && attacker == init) {
+      damage.value -= 4;
+      sendMessage("Apprehension reduces incoming damage by 4!");
+    }
+    if ((confirm(initSkills,"Beast Blood") == true && attacker == opp) || (confirm(oppSkills,"Beast Blood") == true && attacker == init)) {
+      damage.value -= 2;
+      sendMessage("Beast Blood reduces incoming damage by 2!");
+    }
+    if (confirm(initSkills,"Armored Blow") == true && magw == "No" && attacker == opp) {
+      damage.value -= 10;
+      sendMessage("Armored Blow reduces incoming damage by 10!");
+    }
+    if (confirm(initSkills,"Iron Will") == true && magw == "Yes" && attacker == opp) {
+      damage.value -= 4;
+      sendMessage("Iron Will reduces incoming damage by 4!");
+    }
+    if (damage.value < 0) {
+      damage.value = 0;
+    }
+//Damage to enemy
+    if (confirm(skills,"Bane") == true && bane <= sklMod/2 && othHP > 0) {
+      totalDamage -= (1 - othHP);
+      othHP = 1;
+      weaponSim(combat,stats,cod,corn,starkRate);
+      sendMessage("Bane procs! " + defender + " reduced to 1 HP.")
+    }
+    else if (devilCurse <= curseCh && curseActive == true && othHP >0) {
+      if (crit <= critter) {
+        othHP -= (critMod*damage.value);
+        totalDamage = 0;
+        sendMessage("Backfire! Devil's Curse activates! " + attacker + " takes " + (critMod*damage.value) + " damage!");
+      }
+      else {
+        othHP -= damage.value;
+        totalDamage = 0;
+        sendMessage("Backfire! Devil's Curse activates! " + attacker + " takes " + damage.value + " damage!");
+      }
+    }
+    else if (crit <= critter && othHP > 0) {
+      sendMessage(attacker + ": ***" + quote + "***");
+      sendMessage(attacker + " crits " + defender + " for " + (critMod*damage.value) + " damage!");
+      weaponSim(combat,stats,cod,corn,starkRate);
+      if (damage.value*critMod >= othHP && othHP > 1 && ((attacker == init && confirm(oppSkills,"Miracle") == true && miracle <= oppLck) || (attacker == opp && confirm(initSkills,"Miracle") == true && miracle <= initLck))) {
+        critMod = 1;
+        damage.value = othHP - 1;
+        sendMessage("Miracle activates! " + defender + " is spared death!");
+      }
+      totalDamage = (critMod*damage.value);
+      othHP -= (critMod*damage.value);
+    }
+    else if (othHP > 0) {
+      sendMessage(attacker + " hits " + defender + " for " + damage.value + " damage!");
+      weaponSim(combat,stats,stark,starkch,starkRate);
+      if (damage.value >= othHP && othHP > 1 && ((attacker == init && confirm(oppSkills,"Miracle") == true && miracle <= oppLck) || (attacker == opp && confirm(initSkills,"Miracle") == true && miracle <= initLck))) {
+        damage.value = othHP - 1;
+        sendMessage("Miracle activates! " + defender + " is spared death!");
+      }
+      totalDamage = damage.value;
+      othHP -= damage.value;
+    }
+    else {
+      sendMessage("No damage dealt.")
+    }
+    starkRate = rock;
+//Post-hit effects
+    if ((stark == "Arrow" && starkRate <= starkch) || (confirm(skills,"Sol") == true && sol <= sklMod) || aether == true) {
+      if ((attacker == init && oppLiquidOoze == false) || (attacker == opp && initLiquidOoze == false)) {
+        currHP += Math.floor(totalDamage/2);
+        if (currHP > maxHP) {
+          currHP = maxHP;
+        }
+        sendMessage(attacker + " healed " + Math.floor(totalDamage/2) + " from the attack!");
+      }
+      else {
+        currHP -= Math.floor(totalDamage/2);
+        sendMessage(attacker + " loses health they would have healed due to Liquid Ooze's effect!");
+      }
+    }
+    if (attacker == init && oppStark == "Gem" && othHP > 0) {
+      var gem = Math.floor(Math.random() * 100) + 1;
+      if (oppStarkCh == "Minor" && gem <= "20") {
+        currHP -= Math.floor(totalDamage/2);
+        sendMessage("Gem Stark activates! " + Math.floor(totalDamage/2) + " damage reflected!");
+      }
+      else if (oppStarkCh == "Major" && gem <= "20") {
+        currHP -= Math.floor(totalDamage);
+        sendMessage("Gem Stark activates! " + totalDamage + " damage reflected!");
+      }
+    }
+    else if (attacker == opp && initStark == "Gem" && othHP > 0) {
+      var gem = Math.floor(Math.random() * 100) + 1;
+      if (initStarkCh == "Minor" && gem <= "20") {
+        currHP -= Math.floor(totalDamage/2);
+        sendMessage("Gem Stark activates! " + Math.floor(totalDamage/2) + " damage reflected!");
+      }
+      else if (initStarkCh == "Major" && gem <= "20") {
+        currHP -= Math.floor(totalDamage);
+        sendMessage("Gem Stark activates! " + totalDamage + " damage reflected!");
+      }
+    }
+    if (attacker == init && confirm(oppSkills,"Counter") == true && adjacent == true && othHP > 0 && currHP > 0) {
+      currHP -= totalDamage;
+      sendMessage("Counter activates! " + totalDamage + " damage reflected!");
+    }
+    else if (attacker == init && confirm(oppSkills,"Countermagic") == true && magw == "Yes" && othHP > 0 && currHP > 0) {
+      currHP -= totalDamage;
+      sendMessage("Countermagic activates! " + totalDamage + " damage reflected!");
+    }
+    damage.value = stone;
+  }
+  else if (uses > 0) {
+    sendMessage(attacker + " missed!");
+    totalDamage = 0;
+  }
+  else if (uses <= 0) {
+    sendMessage(attacker + "'s weapon is broken! It can't be used!");
+  }
+//Damage and HP correction to keep them both in line with each other.
+  if (attacker == init) {
+    initDamageTotal += (oppCurrHP -othHP);
+    initCurrHP = currHP;
+    sover.getRange("C5").setValue(currHP);
+    oppCurrHP = othHP;
+    eover.getRange("C5").setValue(othHP);
+  }
+  else if (attacker == opp) {
+    oppDamageTotal += (initCurrHP - othHP);
+    initCurrHP = othHP;
+    sover.getRange("C5").setValue(othHP);
+    oppCurrHP = currHP;
+    eover.getRange("C5").setValue(currHP);
+  }
+  if (confirm(skills,"Adept") == true && adept <= spdMod && adeptAct == false && othHP > 0 && uses > 0) {
+    sendMessage("Adept activates! " + attacker + " makes an additional attack!");
+    adeptAct = true;
+    attack(chance,damage,attacker,defender,critter,othHP,combat,stats,stark,starkch,maxHP,currHP,str,mag,skl,spd,lck,def,res,magw,othDef,skills,aether);
+    adeptAct = false;
+  }
+}
+
+function exp(gainLev,othLev,othClass,boss,othAlive,damage,hp,bonus) {
+  var levDiff = othLev-gainLev;
+
+  if (levDiff < 1) {
+    levDiff = 1;
+  }
+
+  var killexp = Math.floor((othClass * (othLev + 9)/10) * levDiff * boss * bonus);
+
+  if (othAlive == true) {
+    killexp = Math.floor(killexp * damage / hp / 2);
+  }
+
+  if (damage.value == 0 || killexp < 1) {
+    killexp = 1;
+  }
+
+  return killexp;
+}
+
+function combatSim() {
+  sendMessage("# " + init + " attacks " + opp + "!");
+//all the additive shit
+  if (confirm(initSkills,"Underdog") == true && oppLev > initLev) {
+    initHit.value += 15;
+    initAvoid.value += 15;
+  }
+  if (confirm(oppSkills,"Underdog") == true && initLev > oppLev) {
+    oppHit.value += 15;
+    oppAvoid.value += 15;
+  }
+  if (confirm(oppSkills,"Steady Hands") == true) {
+    oppHit.value += 15;
+    oppAvoid.value += 15;
+  }
+  if (confirm(oppSkills,"On Guard") == true) {
+    oppSpd += 2;
+    oppAS += 2;
+    oppDef += 2;
+    oppRes += 2;
+    initDamage.value -= 2;
+    if (initDamage.value < 0) {
+      initDamage.value = 0;
+    }
+  }
+  if (confirm(oppSkills,"Ready Stance") == true) {
+    oppDef += 4;
+    if (initMagicW == "No") {
+      initDamage.value -= 4;
+      sendMessage("Ready Stance lowers damage dealt by 4!");
+    }
+    if (initDamage.value < 0) {
+      initDamage.value = 0;
+    }
+  }
+  if (confirm(initSkills,"En Garde") == true) {
+    initHit.value += 10;
+    initCrit.value += 10;
+  }
+  if (confirm(initSkills,"Duelist's Blow") == true) {
+    initAvoid.value += 30;
+  }
+  if (confirm(initSkills,"Darting Blow") == true) {
+    initAS += 5;
+  }
+  if (confirm(initSkills,"Dark Inhibitor") == true) {
+    oppHit.value -= 5;
+    oppAvoid.value -= 5;
+    oppCrit.value -= 5;
+    oppDodge.value -=5;
+  }
+  if (confirm(oppSkills,"Dark Inhibitor") == true) {
+    initHit.value -= 5;
+    initAvoid.value -= 5;
+    initCrit.value -= 5;
+    initDodge.value -=5;
+  }
+  if (confirm(initSkills,"Death Blow") == true) {
+    initCrit.value += 20;
+  }
+  if (confirm(initSkills,"Wrath") == true && initCurrHP <= Math.floor(initMaxHP/2)) {
+    initCrit.value += 20;
+  }
+  if (confirm(oppSkills,"Wrath") == true && oppCurrHP <= Math.floor(oppMaxHP/2)) {
+    oppCrit.value += 20;
+  }
+  if (confirm(initSkills,"Perfectionist") == true && initCurrHP == initMaxHP) {
+    initHit.value += 15;
+    initAvoid.value += 15;
+  }
+  if (confirm(oppSkills,"Perfectionist") == true && oppCurrHP == oppMaxHP) {
+    oppHit.value += 15;
+    oppAvoid.value += 15;
+  }
+  if (confirm(initSkills,"Confidence") == true && initCurrHP == initMaxHP) {
+    initHit.value += 15;
+    initAvoid.value += 15;
+  }
+  if (confirm(oppSkills,"Confidence") == true && oppCurrHP == oppMaxHP) {
+    oppHit.value += 15;
+    oppAvoid.value += 15;
+  }
+  if (confirm(initSkills,"Prescience") == true) {
+    initHit.value += 15;
+    initAvoid.value += 15;
+  }
+  if (confirm(oppSkills,"Patience") == true) {
+    oppHit.value += 10;
+    oppAvoid.value += 10;
+  }
+  if (confirm(initSkills,"Certain Blow") == true) {
+    initHit.value += 40;
+  }
+  if (confirm(initSkills,"Duelist's Shot") == true) {
+    initHit.value += 40;
+  }
+  if (confirm(oppSkills,"First Sin") == true) {
+    oppAvoid.value += 30;
+  }
+  if (confirm(initSkills,"Swordbreaker") == true && oppWeaponType == "Swords") {
+    initHit.value += 50;
+    initAvoid.value += 50;
+  }
+  if (confirm(initSkills,"Lancebreaker") == true && oppWeaponType == "Lances") {
+    initHit.value += 50;
+    initAvoid.value += 50;
+  }
+  if (confirm(initSkills,"Axebreaker") == true && oppWeaponType == "Axes") {
+    initHit.value += 50;
+    initAvoid.value += 50;
+  }
+  if (confirm(initSkills,"Bowbreaker") == true && oppWeaponType == "Bows") {
+    initHit.value += 50;
+    initAvoid.value += 50;
+  }
+  if (confirm(initSkills,"Daggerbreaker") == true && oppWeaponType == "Daggers/Knives") {
+    initHit.value += 50;
+    initAvoid.value += 50;
+  }
+  if (confirm(initSkills,"Armbreaker") == true && oppWeaponType == "Firearms") {
+    initHit.value += 50;
+    initAvoid.value += 50;
+  }
+  if (confirm(initSkills,"Tomebreaker") == true && (oppWeaponType == "Anima Tomes" || oppWeaponType == "Dark Tomes" || oppWeaponType == "Light Tomes")) {
+    initHit.value += 50;
+    initAvoid.value += 50;
+  }
+  if (confirm(oppSkills,"Swordbreaker") == true && initWeaponType == "Swords") {
+    oppHit.value += 50;
+    oppAvoid.value += 50;
+  }
+  if (confirm(oppSkills,"Lancebreaker") == true && initWeaponType == "Lances") {
+    oppHit.value += 50;
+    oppAvoid.value += 50;
+  }
+  if (confirm(oppSkills,"Axebreaker") == true && initWeaponType == "Axes") {
+    oppHit.value += 50;
+    oppAvoid.value += 50;
+  }
+  if (confirm(oppSkills,"Bowbreaker") == true && initWeaponType == "Bows") {
+    oppHit.value += 50;
+    oppAvoid.value += 50;
+  }
+  if (confirm(oppSkills,"Daggerbreaker") == true && initWeaponType == "Daggers/Knives") {
+    oppHit.value += 50;
+    oppAvoid.value += 50;
+  }
+  if (confirm(oppSkills,"Armbreaker") == true && initWeaponType == "Firearms") {
+    oppHit.value += 50;
+    oppAvoid.value += 50;
+  }
+  if (confirm(oppSkills,"Tomebreaker") == true && (initWeaponType == "Anima Tomes" || initWeaponType == "Dark Tomes" || initWeaponType == "Light Tomes")) {
+    oppHit.value += 50;
+    oppAvoid.value += 50;
+  }
+
+  if (adjacent == true) {
+    if (confirm(initSkills,"Heartseeker") == true) {
+      oppAvoid.value -= 20;
+    }
+    if (confirm(oppSkills,"Heartseeker") == true) {
+      initAvoid.value -= 20;
+    }
+    if (confirm(initSkills,"Arcane Blade") == true) {
+      initHit.value += 3+(initMag/2);
+      initCrit.value += 3+(initMag/2);
+    }
+  }
+//beginning combat runs
+  var initTrueHit = initHit.value - oppAvoid.value;
+  var initTrueCrit = initCrit.value - oppDodge.value;
+  var oppTrueHit = oppHit.value - initAvoid.value;
+  var oppTrueCrit = oppCrit.value - initDodge.value;
+
+  if (confirm(oppSkills,"Quick Riposte") == true && oppCurrHP >= oppMaxHP/2) {
+    oppAS = initAS+5;
+  }
+//Vantage attacks for foe when they are below half health
+  if (confirm(oppSkills,"Vantage") == true && oppCurrHP <= oppMaxHP/2 && canCounter == true) {
+    attack(oppTrueHit,oppDamage,opp,init,oppTrueCrit,initCurrHP,ecombat,estats,oppStark,oppStarkCh,oppMaxHP,oppCurrHP,oppStr,oppMag,oppSkl,oppSpd,oppLck,oppDef,oppRes,oppMagicW,initDef,oppSkills,oppAether);
+    oppVantage = true;
+    if (oppBrave == "Yes" && initCurrHP > 0 && oppCurrHP > 0) {
+      attack(oppTrueHit,oppDamage,opp,init,oppTrueCrit,initCurrHP,ecombat,estats,oppStark,oppStarkCh,oppMaxHP,oppCurrHP,oppStr,oppMag,oppSkl,oppSpd,oppLck,oppDef,oppRes,oppMagicW,initDef,oppSkills,oppAether);
+    }
+  }
+//Vantage + Desperation attacks when conditions are cleared
+  if ((confirm(oppSkills,"Vantage") == true && oppCurrHP <= oppMaxHP/2) && (confirm(oppSkills,"Desperation") == true && oppCurrHP < oppMaxHP/2) && oppCurrHP > 0 && initCurrHP >0 && canCounter == true && oppGreatShield == false && oppAS > initAS+4) {
+    attack(oppTrueHit,oppDamage,opp,init,oppTrueCrit,initCurrHP,ecombat,estats,oppStark,oppStarkCh,oppMaxHP,oppCurrHP,oppStr,oppMag,oppSkl,oppSpd,oppLck,oppDef,oppRes,oppMagicW,initDef,oppSkills,oppAether);
+    oppDesperation = true;
+    if (oppBrave == "Yes" && initCurrHP > 0 && oppCurrHP > 0) {
+      attack(oppTrueHit,oppDamage,opp,init,oppTrueCrit,initCurrHP,ecombat,estats,oppStark,oppStarkCh,oppMaxHP,oppCurrHP,oppStr,oppMag,oppSkl,oppSpd,oppLck,oppDef,oppRes,oppMagicW,initDef,oppSkills,oppAether);
+    }
+  }
+//Vantage + Desperation + Nightshroud attack when conditions cleared
+  if ((confirm(oppSkills,"Vantage") == true && oppCurrHP <= oppMaxHP/2) && (confirm(oppSkills,"Desperation") == true && oppCurrHP < oppMaxHP/2) && oppCurrHP > 0 && initCurrHP > 0 && confirm(oppSkills,"Nightshroud") == true && oppAS > initAS+9 && canCounter == true && oppGreatShield == false) {
+    attack(oppTrueHit,oppDamage,opp,init,oppTrueCrit,initCurrHP,ecombat,estats,oppStark,oppStarkCh,oppMaxHP,oppCurrHP,oppStr,oppMag,oppSkl,oppSpd,oppLck,oppDef,oppRes,oppMagicW,initDef,oppSkills,oppAether);
+    if (oppBrave == "Yes" && initCurrHP > 0 && oppCurrHP > 0) {
+      attack(oppTrueHit,oppDamage,opp,init,oppTrueCrit,initCurrHP,ecombat,estats,oppStark,oppStarkCh,oppMaxHP,oppCurrHP,oppStr,oppMag,oppSkl,oppSpd,oppLck,oppDef,oppRes,oppMagicW,initDef,oppSkills,oppAether);
+    }
+  }
+//First basic attack from init
+  attack(initTrueHit,initDamage,init,opp,initTrueCrit,oppCurrHP,scombat,sstats,initStark,initStarkCh,initMaxHP,initCurrHP,initStr,initMag,initSkl,initSpd,initLck,initDef,initRes,initMagicW,oppDef,initSkills,initAether);
+  if (initBrave == "Yes" && oppCurrHP > 0 && initCurrHP > 0) {
+    attack(initTrueHit,initDamage,init,opp,initTrueCrit,oppCurrHP,scombat,sstats,initStark,initStarkCh,initMaxHP,initCurrHP,initStr,initMag,initSkl,initSpd,initLck,initDef,initRes,initMagicW,oppDef,initSkills,initAether);
+  }
+//Desperation follow-ups for init
+  if ((confirm(initSkills,"Desperation") == true && initCurrHP < initMaxHP/2) && initAS > oppAS+4 && oppCurrHP > 0 && initCurrHP > 0 && initGreatShield == false) {
+    attack(initTrueHit,initDamage,init,opp,initTrueCrit,oppCurrHP,scombat,sstats,initStark,initStarkCh,initMaxHP,initCurrHP,initStr,initMag,initSkl,initSpd,initLck,initDef,initRes,initMagicW,oppDef,initSkills,initAether);
+    initDesperation = true;
+    if (initBrave == "Yes" && initCurrHP > 0 && oppCurrHP > 0) {
+      attack(initTrueHit,initDamage,init,opp,initTrueCrit,oppCurrHP,scombat,sstats,initStark,initStarkCh,initMaxHP,initCurrHP,initStr,initMag,initSkl,initSpd,initLck,initDef,initRes,initMagicW,oppDef,initSkills,initAether);
+    }
+  }
+//Desperation + Nightshroud follow-up for init
+  if ((confirm(initSkills,"Desperation") == true && initCurrHP < initMaxHP/2) && oppCurrHP > 0 && initCurrHP > 0 && confirm(initSkills,"Nightshroud") == true && initAS > oppAS+9 && initGreatShield == false) {
+    attack(initTrueHit,initDamage,init,opp,initTrueCrit,oppCurrHP,scombat,sstats,initStark,initStarkCh,initMaxHP,initCurrHP,initStr,initMag,initSkl,initSpd,initLck,initDef,initRes,initMagicW,oppDef,initSkills,initAether);
+    if (initBrave == "Yes" && initCurrHP > 0 && oppCurrHP > 0) {
+      attack(initTrueHit,initDamage,init,opp,initTrueCrit,oppCurrHP,scombat,sstats,initStark,initStarkCh,initMaxHP,initCurrHP,initStr,initMag,initSkl,initSpd,initLck,initDef,initRes,initMagicW,oppDef,initSkills,initAether);
+    }
+  }
+//Response attack from opp if Vantage not active
+  if (oppCurrHP > 0 && canCounter == true && oppVantage == false && oppDesperation == false) {
+    attack(oppTrueHit,oppDamage,opp,init,oppTrueCrit,initCurrHP,ecombat,estats,oppStark,oppStarkCh,oppMaxHP,oppCurrHP,oppStr,oppMag,oppSkl,oppSpd,oppLck,oppDef,oppRes,oppMagicW,initDef,oppSkills,oppAether);
+    if (oppBrave == "Yes" && initCurrHP > 0 && oppCurrHP > 0) {
+      attack(oppTrueHit,oppDamage,opp,init,oppTrueCrit,initCurrHP,ecombat,estats,oppStark,oppStarkCh,oppMaxHP,oppCurrHP,oppStr,oppMag,oppSkl,oppSpd,oppLck,oppDef,oppRes,oppMagicW,initDef,oppSkills,oppAether);
+    }
+  }
+//Desperation follow-ups for opp
+  if ((confirm(oppSkills,"Desperation") == true && oppCurrHP < oppMaxHP/2) && oppCurrHP > 0 && initCurrHP >0 && canCounter == true && oppDesperation == false && oppGreatShield == false && oppAS > initAS+4) {
+    attack(oppTrueHit,oppDamage,opp,init,oppTrueCrit,initCurrHP,ecombat,estats,oppStark,oppStarkCh,oppMaxHP,oppCurrHP,oppStr,oppMag,oppSkl,oppSpd,oppLck,oppDef,oppRes,oppMagicW,initDef,oppSkills,oppAether);
+    oppDesperation = true;
+    if (oppBrave == "Yes" && initCurrHP > 0 && oppCurrHP > 0) {
+      attack(oppTrueHit,oppDamage,opp,init,oppTrueCrit,initCurrHP,ecombat,estats,oppStark,oppStarkCh,oppMaxHP,oppCurrHP,oppStr,oppMag,oppSkl,oppSpd,oppLck,oppDef,oppRes,oppMagicW,initDef,oppSkills,oppAether);
+    }
+  }
+//Desperation + Nightshroud follow-up for opp
+  if ((confirm(oppSkills,"Desperation") == true && oppCurrHP < oppMaxHP/2) && oppCurrHP > 0 && initCurrHP > 0 && confirm(oppSkills,"Nightshroud") == true && oppAS > initAS+9 && canCounter == true && oppDesperation == false && oppGreatShield == false) {
+    attack(oppTrueHit,oppDamage,opp,init,oppTrueCrit,initCurrHP,ecombat,estats,oppStark,oppStarkCh,oppMaxHP,oppCurrHP,oppStr,oppMag,oppSkl,oppSpd,oppLck,oppDef,oppRes,oppMagicW,initDef,oppSkills,oppAether);
+    if (oppBrave == "Yes" && initCurrHP > 0 && oppCurrHP > 0) {
+      attack(oppTrueHit,oppDamage,opp,init,oppTrueCrit,initCurrHP,ecombat,estats,oppStark,oppStarkCh,oppMaxHP,oppCurrHP,oppStr,oppMag,oppSkl,oppSpd,oppLck,oppDef,oppRes,oppMagicW,initDef,oppSkills,oppAether);
+    }
+  }
+//Follow-up attacks as determined by normal order
+  if ((oppCurrHP > 0) && (initCurrHP > 0) && initAS > (oppAS+4) && initBrave != "Null" && initGreatShield == false && initDesperation == false) {
+    attack(initTrueHit,initDamage,init,opp,initTrueCrit,oppCurrHP,scombat,sstats,initStark,initStarkCh,initMaxHP,initCurrHP,initStr,initMag,initSkl,initSpd,initLck,initDef,initRes,initMagicW,oppDef,initSkills,initAether);
+    if (initBrave == "Yes" && oppCurrHP > 0 && initCurrHP > 0) {
+      attack(initTrueHit,initDamage,init,opp,initTrueCrit,oppCurrHP,scombat,sstats,initStark,initStarkCh,initMaxHP,initCurrHP,initStr,initMag,initSkl,initSpd,initLck,initDef,initRes,initMagicW,oppDef,initSkills,initAether);
+    }
+  }
+  else if ((oppCurrHP > 0) && (initCurrHP > 0) && oppAS > (initAS+4) && oppBrave != "Null" && oppGreatShield == false && oppDesperation == false) {
+    if (canCounter == true) {
+      attack(oppTrueHit,oppDamage,opp,init,oppTrueCrit,initCurrHP,ecombat,estats,oppStark,oppStarkCh,oppMaxHP,oppCurrHP,oppStr,oppMag,oppSkl,oppSpd,oppLck,oppDef,oppRes,oppMagicW,initDef,oppSkills,oppAether);
+      if (oppBrave == "Yes" && initCurrHP > 0 && oppCurrHP > 0) {
+        attack(oppTrueHit,oppDamage,opp,init,oppTrueCrit,initCurrHP,ecombat,estats,oppStark,oppStarkCh,oppMaxHP,oppCurrHP,oppStr,oppMag,oppSkl,oppSpd,oppLck,oppDef,oppRes,oppMagicW,initDef,oppSkills,oppAether);
+      }
+    }
+  }
+//Follow-up attacks for Nightshroud
+  if ((oppCurrHP > 0) && (initCurrHP > 0) && initAS > (oppAS+9) && confirm(initSkills,"Nightshroud") == true && initBrave != "Null" && initGreatShield == false && initDesperation == false) {
+    attack(initTrueHit,initDamage,init,opp,initTrueCrit,oppCurrHP,scombat,sstats,initStark,initStarkCh,initMaxHP,initCurrHP,initStr,initMag,initSkl,initSpd,initLck,initDef,initRes,initMagicW,oppDef,initSkills,initAether);
+    if (initBrave == "Yes" && oppCurrHP > 0 && initCurrHP > 0) {
+      attack(initTrueHit,initDamage,init,opp,initTrueCrit,oppCurrHP,scombat,sstats,initStark,initStarkCh,initMaxHP,initCurrHP,initStr,initMag,initSkl,initSpd,initLck,initDef,initRes,initMagicW,oppDef,initSkills,initAether);
+    }
+  }
+  else if ((oppCurrHP > 0) && (initCurrHP > 0) && oppAS > (initAS+9) && confirm(oppSkills,"Nightshroud") == true && oppBrave != "Null" && oppGreatShield == false && oppDesperation == false) {
+    if (canCounter == true) {
+      attack(oppTrueHit,oppDamage,opp,init,oppTrueCrit,initCurrHP,ecombat,estats,oppStark,oppStarkCh,oppMaxHP,oppCurrHP,oppStr,oppMag,oppSkl,oppSpd,oppLck,oppDef,oppRes,oppMagicW,initDef,oppSkills,oppAether);
+      if (oppBrave == "Yes" && initCurrHP > 0 && oppCurrHP > 0) {
+        attack(oppTrueHit,oppDamage,opp,init,oppTrueCrit,initCurrHP,ecombat,estats,oppStark,oppStarkCh,oppMaxHP,oppCurrHP,oppStr,oppMag,oppSkl,oppSpd,oppLck,oppDef,oppRes,oppMagicW,initDef,oppSkills,oppAether);
+      }
+    }
+  }
+//End of Attack chain
+  var oppAlive = true;
+  var initAlive = true;
+
+  if (oppCurrHP < 1) {
+    oppAlive = false;
+  }
+
+  if (initCurrHP < 1) {
+    initAlive = false;
+  }
+
+  var initExp = exp(initLev,oppLev,oppClass,oppBoss,oppAlive,initDamageTotal,oppMaxHP,initBonusExp);
+
+  if (confirm(initSkills,"Future Sight") == true) {
+    var rate = Math.floor(Math.random() * 100) + 1;
+    if (rate <= initLck) {
+      initExp*2;
+    }
+  }
+
+  if (actualInitHit.value == true && initWeaponEffect.includes("Shreds") && oppShred < 3) {
+    emisc.getRange("F2").setValue(oppShred+1);
+    sendMessage(opp + " gains a stack of shred! Currently " + oppShred+1 + " stacks!");
+  }
+  if (actualInitHit.value == true && initWeaponEffect.includes("Sleep") && oppSleep == 0) {
+    emisc.getRange("F3").setValue(5);
+    sendMessage(opp + " is afflicted with Sleep!");
+  }
+  if (actualInitHit.value == true && initWeaponEffect.includes("Poison") && oppPoison == 0) {
+    emisc.getRange("F4").setValue(5);
+    sendMessage(opp + " is afflicted with Poison!");
+  }
+  if (actualInitHit.value == true && initWeaponEffect.includes("Berserk") && oppBerserk == 0) {
+    emisc.getRange("F5").setValue(5);
+    sendMessage(opp + " is afflicted with Berserk!");
+  }
+  if (actualInitHit.value == true && initWeaponEffect.includes("Silence") && oppSilence == 0) {
+    emisc.getRange("F6").setValue(5);
+    sendMessage(opp + " is afflicted with Silence!");
+  }
+  if (actualInitHit.value == true && initWeaponEffect.includes("Petri") && oppPetri == 0) {
+    emisc.getRange("F7").setValue(5);
+    sendMessage(opp + " is afflicted with Petrification!");
+  }
+  if (actualInitHit.value == true && initWeaponEffect.includes("Burn") && oppBurn == 0) {
+    emisc.getRange("F8").setValue(1);
+    sendMessage(opp + " is Burning!");
+  }
+  if (actualInitHit.value == true && initWeaponEffect.includes("Paralyze") && oppParaly == 0) {
+    emisc.getRange("F9").setValue(1);
+    sendMessage(opp + " is Paralyzed!");
+  }
+  if (actualInitHit.value == true && confirm(initSkills,"Seal Strength") == true && oppSealStr == 0) {
+    emisc.getRange("F10").setValue(6);
+    sendMessage(opp + "'s Strength has been sealed!");
+  }
+  if (actualInitHit.value == true && confirm(initSkills,"Seal Magic") == true && oppSealMag == 0) {
+    emisc.getRange("F11").setValue(6);
+    sendMessage(opp + "'s Magic has been sealed!");
+  }
+  if (actualInitHit.value == true && confirm(initSkills,"Seal Defense") == true && oppSealDef == 0) {
+    emisc.getRange("F12").setValue(6);
+    sendMessage(opp + "'s Defense has been sealed!");
+  }
+  if (actualInitHit.value == true && confirm(initSkills,"Seal Resistance") == true && oppSealRes == 0) {
+    emisc.getRange("F13").setValue(6);
+    sendMessage(opp + "'s Resistance has been sealed!");
+  }
+  if (actualInitHit.value == true && confirm(initSkills,"Seal Speed") == true && oppSealSpd == 0) {
+    emisc.getRange("F14").setValue(6);
+    sendMessage(opp + "'s Speed has been sealed!");
+  }
+
+  if (actualOppHit.value == true && oppWeaponEffect.includes("Shreds") && initShred < 3) {
+    smisc.getRange("F2").setValue(initShred+1);
+    sendMessage(init + " gains a stack of shred! Currently " + initShred+1 + " stacks!");
+  }
+  if (actualOppHit.value == true && oppWeaponEffect.includes("Sleep") && initSleep == 0) {
+    smisc.getRange("F3").setValue(5);
+    sendMessage(init + " is afflicted with Sleep!");
+  }
+  else if (initSleep > 0) {
+    smisc.getRange("F3").setValue(initSleep-1);
+    if (initSleep-1 == 0) {
+      sendMessage(init + " is cured of Sleep!")
+    }
+  }
+  if (actualOppHit.value == true && oppWeaponEffect.includes("Poison") && initPoison == 0) {
+    smisc.getRange("F4").setValue(5);
+    sendMessage(init + " is afflicted with Poison!");
+  }
+  else if (initPoison > 0) {
+    smisc.getRange("F4").setValue(initPoison-1);
+    if (initPoison-1 == 0) {
+      sendMessage(init + " is cured of Poison!")
+    }
+  }
+  if (actualOppHit.value == true && oppWeaponEffect.includes("Berserk") && initBerserk == 0) {
+    smisc.getRange("F5").setValue(5);
+    sendMessage(init + " is afflicted with Berserk!");
+  }
+  else if (initBerserk > 0) {
+    smisc.getRange("F5").setValue(initBerserk-1);
+    if (initBerserk-1 == 0) {
+      sendMessage(init + " is cured of Berserk!")
+    }
+  }
+  if (actualOppHit.value == true && oppWeaponEffect.includes("Silence") && initSilence == 0) {
+    smisc.getRange("F6").setValue(5);
+    sendMessage(init + " is afflicted with Silence!");
+  }
+  else if (initSilence > 0) {
+    smisc.getRange("F6").setValue(initSilence-1);
+    if (initSilence-1 == 0) {
+      sendMessage(init + " is cured of Silence!")
+    }
+  }
+  if (actualOppHit.value == true && oppWeaponEffect.includes("Petri") && initPetri == 0) {
+    smisc.getRange("F7").setValue(5);
+    sendMessage(init + " is afflicted with Petrification!");
+  }
+  else if (initPetri > 0) {
+    smisc.getRange("F7").setValue(initPetri-1);
+    if (initPetri-1 == 0) {
+      sendMessage(init + " is cured of Petrification!")
+    }
+  }
+  if (actualOppHit.value == true && oppWeaponEffect.includes("Burn") && initBurn == 0) {
+    smisc.getRange("F8").setValue(1);
+    sendMessage(init + " is Burning!");
+  }
+  else if (initBurn > 0) {
+    smisc.getRange("F8").setValue(initBurn-1);
+    if (initBurn-1 == 0) {
+      sendMessage(init + " is cured of Burning!")
+    }
+  }
+  if (actualOppHit.value == true && initWeaponEffect.includes("Paralyze") && initParaly == 0) {
+    smisc.getRange("F9").setValue(1);
+    sendMessage(opp + " is Paralyzed!");
+  }
+  else if (initParaly > 0) {
+    smisc.getRange("F9").setValue(initParaly-1);
+    if (initParaly-1 == 0) {
+      sendMessage(init + " is cured of Paralyzed!")
+    }
+  }
+  if (actualOppHit.value == true && confirm(oppSkills,"Seal Strength") == true && initSealStr == 0) {
+    smisc.getRange("F10").setValue(6);
+    sendMessage(init + "'s Strength has been sealed!");
+  }
+  else if (initSealStr > 0) {
+    smisc.getRange("F10").setValue(initSealStr - 1);
+      if (initSealStr-1 == 0) {
+        sendMessage(init + "'s Strength is no longer sealed!")
+      }
+  }
+  if (actualOppHit.value == true && confirm(oppSkills,"Seal Magic") == true && initSealMag == 0) {
+    smisc.getRange("F11").setValue(6);
+    sendMessage(init + "'s Magic has been sealed!");
+  }
+  else if (initSealMag > 0) {
+    smisc.getRange("F11").setValue(initSealMag - 1);
+      if (initSealMag-1 == 0) {
+        sendMessage(init + "'s Magic is no longer sealed!")
+      }
+  }
+  if (actualOppHit.value == true && confirm(oppSkills,"Seal Defense") == true && initSealDef == 0) {
+    smisc.getRange("F12").setValue(6);
+    sendMessage(init + "'s Defense has been sealed!");
+  }
+  else if (initSealDef > 0) {
+    smisc.getRange("F12").setValue(initSealDef - 1);
+      if (initSealDef - 1 == 0) {
+        sendMessage(init + "'s Defense is no longer sealed!")
+      }
+  }
+  if (actualOppHit.value == true && confirm(oppSkills,"Seal Resistance") == true && initSealRes == 0) {
+    smisc.getRange("F13").setValue(6);
+    sendMessage(init + "'s Resistance has been sealed!");
+  }
+  else if (initSealRes > 0) {
+    smisc.getRange("F13").setValue(initSealRes - 1);
+      if (initSealRes - 1 == 0) {
+        sendMessage(init + "'s Resistance is no longer sealed!")
+      }
+  }
+  if (actualOppHit.value == true && confirm(oppSkills,"Seal Speed") == true && initSealSpd == 0) {
+    smisc.getRange("F14").setValue(6);
+    sendMessage(init + "'s Speed has been sealed!");
+  }
+  else if (initSealSpd > 0) {
+    smisc.getRange("F14").setValue(initSealSpd - 1);
+      if (initSealSpd - 1 == 0) {
+        sendMessage(init + "'s Speed is no longer sealed!")
+      }
+  }
+
+  var oppExp = exp(oppLev,initLev,initClass,initBoss,initAlive,oppDamageTotal,initMaxHP,oppBonusExp);
+
+  if (initAlive == true) {
+    if (oppAlive == false) {
+      sendMessage(init + " defeated " + opp + "! " + init + " gains " + initExp + " experience!");
+      if (confirm(initSkills,"Lifetaker") == true) {
+        initCurrHP += Math.floor(initMaxHP/2);
+        if (initCurrHP > initMaxHP) {
+          initCurrHP = initMaxHP;
+        }
+        sendMessage("Lifetaker activates! " + init + " heals for 50% of Max HP!")
+      }
+      if (eover.getRange("K21").getValue() != false) {
+        sendMessage("# " + opp + ": " + eover.getRange("K21").getValue());
+      }
+    }
+    else if (oppAlive == true) {
+      var viper = Math.floor(Math.random() * 100) + 1;
+      if (initStark == "Viper" && ((initStarkCh == "Minor" && viper <= "20") || (initStarkCh == "Major" && viper <= "40"))) {
+        oppCurrHP = Math.floor(oppCurrHP/2);
+        sendMessage("Viper Stark activates! " + opp + "'s HP has been halved!");
+      }
+      if (confirm(initSkills,"Poison Strike") == true) {
+        oppCurrHP -= Math.floor(oppMaxHP*0.2);
+        sendMessage("Poison Strike activates! " + opp + "'s HP has been reduced!");
+      }
+      
+      if (confirm(initSkills,"Savage Blow") == true) {
+        oppCurrHP -= Math.floor(oppMaxHP*0.2);
+        sendMessage("Savage Blow activates! " + opp + "'s, and surrounding enemies, HP has been reduced!");
+      }
+      if (confirm(initSkills,"Grisly Wound") == true) {
+        oppCurrHP -= Math.floor(oppMaxHP*0.2);
+        sendMessage("Grisly Wound activates! " + opp + "'s HP has been reduced!");
+      }
+      if (confirm(oppSkills,"Grisly Wound") == true) {
+        initCurrHP -= Math.floor(oppMaxHP*0.2);
+        sendMessage("Grisly Wound activates! " + init + "'s HP has been reduced!");
+      }
+      if (initCurrHP < 1) {
+        initCurrHP = 1;
+      }
+      if (oppCurrHP < 1) {
+        oppCurrHP = 1;
+      }
+      sendMessage(init + " finishes their bout with " + opp + "! " + init + " gains " + initExp + " experience! " + opp + " gains " + oppExp + " experience!");
+    }
+    initCurrExp += initExp;
+    if (initCurrExp >= initExpReq) {
+      while (initCurrExp >= initExpReq) {
+        initExpReq = sover.getRange("D6").getValue();
+        initCurrExp -= initExpReq;
+        sover.getRange("C6").setValue(initCurrExp);
+        levelUpFlip(init,sstats,sover,slevels);
+      }
+    }
+    else {
+      sover.getRange("C6").setValue(initCurrExp);
+    }
+    initMastery += initMasteryBonus;
+    if (initMastery >= initMasteryMax) {
+      sendMessage(init + " has earned " + initMasteryMax + " points! They can learn a new skill (if applicable)!");
+      scombat.getRange("K11").setValue("0");
+    }
+    else {
+      scombat.getRange("K11").setValue(initMastery);
+    }
+  }
+  else {
+    sendMessage(opp + " defeated " + init + " on reprisal! " + opp + " gains " + oppExp + " experience!");
+    if (sover.getRange("K21").getValue() != false) {
+      sendMessage("# " + init + ": " + sover.getRange("K21").getValue());
+    }
+  }
+
+  if (oppAlive == true) {
+    oppCurrExp += oppExp;
+    if (oppCurrExp >= oppExpReq) {
+      while(oppCurrExp >= oppExpReq) {
+        oppCurrExp -= oppExpReq;
+        eover.getRange("C6").setValue(oppCurrExp);
+        levelUpFlip(opp,estats,eover,elevels);
+      }
+    }
+    else {
+      eover.getRange("C6").setValue(oppCurrExp);
+    }
+    oppMastery += oppMasteryBonus;
+    if (oppMastery >= oppMasteryMax) {
+      sendMessage(opp + " has earned " + oppMastery + " points! They can learn a new skill (if applicable)!");
+      ecombat.getRange("K11").setValue("0");
+    }
+    else {
+      ecombat.getRange("K11").setValue(oppMastery);
+    }
+  }
+
+  sover.getRange("C5").setValue(initCurrHP);
+  eover.getRange("C5").setValue(oppCurrHP);
+}
